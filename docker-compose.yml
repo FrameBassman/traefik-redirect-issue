@@ -5,19 +5,21 @@ services:
     container_name: app
     build:
       context: ./services/app
+    expose:
+      - 80
     labels:
-      - "traefik.enable=true"
-      - "traefik.port=80"
-      - "traefik.backend=app"
-      - "traefik.frontend.redirect.regex=^(.*)/app$$"
-      - "traefik.frontend.redirect.replacement=$$1/app/"
-      - "traefik.frontend.rule=PathPrefix:/app;ReplacePathRegex: ^/app/(.*) /$$1"
+      - traefik.enable=true
+      - traefik.http.routers.app.entrypoints=http-point
+      - traefik.http.routers.app.rule=PathPrefix(`/app`)
+      - traefik.http.middlewares.app-replacepathregex.replacepathregex.regex=^/app/(.*)
+      - traefik.http.middlewares.app-replacepathregex.replacepathregex.replacement=/$$1
+      - traefik.http.routers.app.middlewares=app-replacepathregex
   proxy:
     container_name: proxy
-    image: traefik:v1.7.34-alpine
+    image: traefik:v2.6.1
     ports:
       - 80:80
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./services/proxy/traefik.toml:/traefik.toml:ro
+      - ./services/proxy/traefik.yml:/traefik.yml:ro
